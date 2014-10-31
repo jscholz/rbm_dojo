@@ -134,13 +134,13 @@ class RBM:
     # Insert bias units of 1 into the first column of data.
     data = np.insert(data, 0, 1, axis = 1)
 
-    # Calculate the activations of the visible units.
+    # Calculate the activations of the output units.
     activations = np.dot(data, weights)
 
-    # Calculate the probabilities of turning the visible units on.
+    # Calculate the probabilities of turning the output units on.
     probs = self._logistic(activations)
     
-    # Turn the visible units on with their specified probabilities.
+    # Turn the output units on with their specified probabilities.
     output_states[:,:] = probs > np.random.rand(num_examples, num_output_nodes)
 
     # Always fix the bias unit to 1.
