@@ -66,7 +66,7 @@ class RBM:
       error = np.sum((data - neg_visible_probs) ** 2)
       print("Epoch %s: error is %s" % (epoch, error))
 
-  def run_visible_orig(self, data):
+  def run_visible(self, data):
     """
     Assuming the RBM has been trained (so that weights for the network have been learned),
     run the network on a set of visible units, to get a sample of the hidden units.
@@ -80,38 +80,9 @@ class RBM:
     hidden_states: A matrix where each row consists of the hidden units activated from the visible
     units in the data matrix passed in.
     """
-    
-    num_examples = data.shape[0]
-    
-    # Create a matrix, where each row is to be the hidden units (plus a bias unit)
-    # sampled from a training example.
-    hidden_states = np.ones((num_examples, self.num_hidden + 1))
-    
-    # Insert bias units of 1 into the first column of data.
-    data = np.insert(data, 0, 1, axis = 1)
-
-    # Calculate the activations of the hidden units.
-    hidden_activations = np.dot(data, self.weights)
-
-    # Calculate the probabilities of turning the hidden units on.
-    hidden_probs = self._logistic(hidden_activations)
-    # print("hidden_probs: ", hidden_probs)
-
-    # Turn the hidden units on with their specified probabilities.
-    hidden_states[:,:] = hidden_probs > np.random.rand(num_examples, self.num_hidden + 1)
-
-    # Always fix the bias unit to 1.
-    # hidden_states[:,0] = 1
-  
-    # Ignore the bias units.
-    hidden_states = hidden_states[:,1:]
-    return hidden_states
-
-  def run_visible(self, data):
     return self.gibbs_step(data, self.weights)
     
-  # TODO: Remove the code duplication between this method and `run_visible`?
-  def run_hidden_orig(self, data):
+  def run_hidden(self, data):
     """
     Assuming the RBM has been trained (so that weights for the network have been learned),
     run the network on a set of hidden units, to get a sample of the visible units.
@@ -125,48 +96,30 @@ class RBM:
     visible_states: A matrix where each row consists of the visible units activated from the hidden
     units in the data matrix passed in.
     """
-
-    num_examples = data.shape[0]
-
-    # Create a matrix, where each row is to be the visible units (plus a bias unit)
-    # sampled from a training example.
-    visible_states = np.ones((num_examples, self.num_visible + 1))
-
-    # Insert bias units of 1 into the first column of data.
-    data = np.insert(data, 0, 1, axis = 1)
-
-    # Calculate the activations of the visible units.
-    visible_activations = np.dot(data, self.weights.T)
-
-    # Calculate the probabilities of turning the visible units on.
-    visible_probs = self._logistic(visible_activations)
-
-    # Turn the visible units on with their specified probabilities.
-    visible_states[:,:] = visible_probs > np.random.rand(num_examples, self.num_visible + 1)
-
-    # Always fix the bias unit to 1.
-    # visible_states[:,0] = 1
-
-    # Ignore the bias units.
-    visible_states = visible_states[:,1:]
-    return visible_states
-
-  def run_hidden(self, data):
     return self.gibbs_step(data, self.weights.T)
   
   def gibbs_step(self, data, weights):
     """
-    Assuming the RBM has been trained (so that weights for the network have been learned),
-    run the network on a set of hidden units, to get a sample of the visible units.
+    Performs a single block-gibbs step of the RBM given the provided data.  
+    This function can be used to resample either the hidden or visible 
+    units, depending on the data and weights passed in.  
 
     Parameters
     ----------
-    data: A matrix where each row consists of the states of the hidden units.
+    To resample the hidden units conditional on the visible units [e.g. H ~ P(H|V)]
+    you should pass in:
+      1) A matrix where each row consists of the states of the hidden units.
+      2) The weight matrix of the RBM
+
+    To resample the visible units conditional on the hidden units [e.g. V ~ P(V|H)]
+    you should pass in:
+      1) A matrix where each row consists of the states of the visible units.
+      2) The TRANSPOSE of the weight matrix of the RBM
 
     Returns
     -------
-    visible_states: A matrix where each row consists of the visible units activated from the hidden
-    units in the data matrix passed in.
+    output_states: A matrix where each row consists of the appropraite units
+    activated from the other layer of the RBM.
     """
 
     num_examples = data.shape[0]
@@ -278,4 +231,7 @@ if __name__ == '__main__':
   r.print_query([[1,1,1,0,0,0]], key) # should be SF/fantasy
   r.print_query([[1,1,0,0,0,0]], key) # should be strictly SF/fantasy
   r.print_query([[0,0,0,0,0,1]], key) # glitter is neither, so we'll see
+
+  print('run hidden:\n', r.run_hidden(np.array([[0,0], [0,1], [1,0], [1,1]])))
+  print('run visible:\n', r.run_visible(training_data))
   import ipdb;ipdb.set_trace()
